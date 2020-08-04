@@ -65,7 +65,7 @@ static int lept_parse_literal(lept_context*c,lept_value*v,char*keyword,lept_type
 static int lept_parse_number(lept_context *c, lept_value *v){
     const char*p=c->json;
     if(*p=='-') p++;
-    if(*p==0)p++;
+    if(*p=='0')p++;
     else{
         /*整数部分*/
         if(!ISDIGIT1TO9(*p))return LEPT_PARSE_INVALID_VALUE;
@@ -83,8 +83,8 @@ static int lept_parse_number(lept_context *c, lept_value *v){
         if(!ISDIGIT(*p))return LEPT_PARSE_INVALID_VALUE;
         while(ISDIGIT(*p))p++;
     }
-    v->n=strtod(c->json,NULL);
     errno=0; /*记录最后一次的错误 代号 ERANGE 代表超出范围 HUGE_VAL代表double无穷大常量*/
+    v->n=strtod(c->json,NULL);
     if(errno==ERANGE && (v->n==HUGE_VAL || v->n== -HUGE_VAL))
         return LEPT_PARSE_NUMBER_TOO_BIG;
     v->type=LEPT_NUMBER;
@@ -109,10 +109,10 @@ int lept_parse(lept_value* v, const char* json) {
     c.json = json;
     v->type = LEPT_NULL;
     lept_parse_whitespace(&c);
-    ret=lept_parse_value(&c, v);
-    if(ret==LEPT_PARSE_OK){
+    if((ret=lept_parse_value(&c,v))==LEPT_PARSE_OK){
         lept_parse_whitespace(&c);
         if(*c.json!='\0'){
+            v->type=LEPT_NULL;
             return LEPT_PARSE_ROOT_NOT_SINGULAR;
         }
     }
