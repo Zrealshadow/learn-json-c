@@ -20,6 +20,8 @@ static int test_pass = 0;
 
 #define EXPECT_EQ_INT(expect, actual) EXPECT_EQ_BASE((expect) == (actual), expect, actual, "%d")
 #define EXPETC_EQ_DOUBLE(expect,actual) EXPECT_EQ_BASE((expect)==(actual),expect,actual,"%.17g")
+#define EXPECT_EQ_STRING(expect,actual,alength) \
+    EXPECT_EQ_BASE(sizeof(expect)-1==alength &&memcmp(expect,actual,alength)==0,expect,actual,"%s")
 
 #define TEST_ERROR(error,json) \
     do {\
@@ -133,7 +135,7 @@ static void test_parse_number(){
     TEST_NUMBER(1e10, "1e10");
     TEST_NUMBER(1E+10, "1E+10");
     TEST_NUMBER(1E-10, "1E-10");
-#if 0
+
     TEST_NUMBER(-1E10, "-1E10");
     TEST_NUMBER(-1e10, "-1e10");
     TEST_NUMBER(-1E+10, "-1E+10");
@@ -156,8 +158,16 @@ static void test_parse_number(){
     /* Max double */
     TEST_NUMBER( 1.7976931348623157e+308, "1.7976931348623157e+308");
     TEST_NUMBER(-1.7976931348623157e+308, "-1.7976931348623157e+308");
-#endif
+}
 
+static void test_access_string(){
+    lept_value v;
+    lept_init(&v);
+    lept_set_string(&v,"",0);
+    EXPECT_EQ_STRING("",lept_get_string(&v),lept_get_string_length(&v));
+    lept_set_string(&v,"Hello World",11);
+    EXPECT_EQ_STRING("Hello World",lept_get_string(&v),lept_get_string_length(&v));
+    lept_free(&v);
 }
 
 static void test_parse() {
@@ -172,7 +182,7 @@ static void test_parse() {
 }
 
 int main() {
-    double a=3.14156;
     test_parse();
+    printf("%d/%d (%3.2f%%) passed\n", test_pass, test_count, test_pass * 100.0 / test_count);
     return main_ret;
 }
