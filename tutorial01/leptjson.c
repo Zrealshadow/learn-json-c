@@ -122,9 +122,50 @@ static int lept_parse_number(lept_context *c, lept_value *v){
     return LEPT_PARSE_OK;
 }
 
+#define PUTC(c,ch) do {*(char *)lept_context_push(c,sizeof(char))=(ch);} while(0)
+
+
 static int lept_parse_string(lept_context *c,lept_value *v){
-    const char * p=c->json;
-    p++;
+    size_t head=c->top,len;
+    const char * p;
+    EXPECT(c,'\"');
+    p=c->json;
+    for(;;){
+        char ch=*p++;
+        switch (ch)
+        {
+        case '\"':
+            len=c->top-head;
+            lept_set_string(v,(const char *) lept_context_pop(c,len),len);
+            c->json=p;
+            return LEPT_PARSE_OK;
+        case '\0':
+            c->top=head;
+            return LEPT_PARSE_MISS_QUOTATION_MARK;
+        case '\\':
+            char ch_next=*p++;
+            switch(ch_next){
+                case '\"': PUTC(c,'\"'); break;
+                case '\\': PUTC(c,'\\'); break;
+                case '/': PUTC(c,'/');break;
+                case 'b': PUTC(c,'\b'); break;
+                case 'f': PUTC(c,'\f'); break;
+                case 'n': PUTC(c,'\n'); break;
+                case 'r': PUTC(c,'\r'); break;
+                case 't': PUTC(c,'\t'); break;
+                default:
+                    c->top=head;
+                    return LEPT_PARSE_INVALID_STRING_ESCAPE;
+            }
+        default:
+            if((unsigned char) ch <0x20){
+                c->top=head;
+                return LEPT_PARSE_INVALID_STRING_CHAR;
+            }
+            PUTC(c,ch);
+        }
+    }
+
     // while((*p)!='\"'){
         
     // }
